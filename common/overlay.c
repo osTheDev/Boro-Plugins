@@ -56,6 +56,29 @@ void ov_rect(int x, int y, int w, int h, u32 argb)
         for (int i = x; i < x + w; i++) plot(i, j, argb);
 }
 
+void ov_rrect(int x, int y, int w, int h, int r, u32 argb)
+{
+    for (int j = 0; j < h; j++) {
+        // How far in the corner curve starts on this row.
+        int dy = j < r ? r - j : j >= h - r ? j - (h - r - 1) : 0, in = 0;
+        if (dy) while (in < r && (r - in) * (r - in) + dy * dy > r * r) in++;
+        ov_rect(x + in, y + j, w - 2 * in, 1, argb);
+    }
+}
+
+void ov_ring(int cx, int cy, int r, u32 argb)
+{
+    // Midpoint circle: each step plots the eight symmetric points.
+    int x = r, y = 0, err = 1 - r;
+    while (x >= y) {
+        int pts[8][2] = { { x, y }, { y, x }, { -y, x }, { -x, y }, { -x, -y }, { -y, -x }, { y, -x }, { x, -y } };
+        for (int i = 0; i < 8; i++) plot(cx + pts[i][0], cy + pts[i][1], argb);
+        y++;
+        if (err < 0) err += 2 * y + 1;
+        else { x--; err += 2 * (y - x) + 1; }
+    }
+}
+
 static int glyph(char c) { return c < 32 || c > 126 ? '?' - 32 : c - 32; }
 
 int ov_text_width(const char *s, int scale)

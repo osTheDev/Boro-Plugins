@@ -17,4 +17,8 @@ typedef void (*KeyHandler)(int key, int event, u32 button);
 // Starts a thread that watches the buttons and calls handler from it.
 void keys_start(KeyHandler handler);
 
+int keys_held(int key);           // NOTE or SCREEN is down right now
+u32 keys_released_at(int key);    // system time (us) it last came up
+u32 keys_last_input(void);        // system time (us) any button last changed
+
 #endif

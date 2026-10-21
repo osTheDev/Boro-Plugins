@@ -17,5 +17,7 @@ int overlay_start(OverlayDraw draw);
 void ov_rect(int x, int y, int w, int h, u32 argb);
 void ov_text(int x, int y, const char *s, u32 argb, int scale); // y is the top
 int ov_text_width(const char *s, int scale);
+void ov_rrect(int x, int y, int w, int h, int r, u32 argb);     // filled, rounded corners
+void ov_ring(int cx, int cy, int r, u32 argb);                  // 1px circle outline
 
 #endif
