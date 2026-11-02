@@ -26,7 +26,7 @@ PSP_MODULE_INFO("BoroSnap", PSP_MODULE_KERNEL, 1, 0);
 
 enum { IDLE, WANTED, CAPTURED };
 static volatile int stage = IDLE, saved, failed;
-static volatile u32 flash_at, icon_until;
+static volatile u64 flash_at, icon_until;
 static SceUID block = -1;
 static u8 *shot;
 static int show_flash, show_icon, in_vsh;
@@ -69,11 +69,11 @@ static void draw(void)
     if (stage == WANTED) {
         for (int y = 0; y < OV_H; y++) ov_read_row(y, shot + y * OV_W * 3);
         stage = CAPTURED;
-        flash_at = sceKernelGetSystemTimeLow();
+        flash_at = now_us();
     }
-    u32 now = sceKernelGetSystemTimeLow();
-    if (show_flash && now - flash_at < FLASH_US) draw_flash(now - flash_at);
-    if (show_icon && (int)(icon_until - now) > 0) draw_camera();
+    u64 now = now_us();
+    if (show_flash && flash_at && now - flash_at < FLASH_US) draw_flash((u32)(now - flash_at));
+    if (show_icon && icon_until > now) draw_camera();
 }
 
 static void on_key(int key, int event, u32 button)
@@ -84,12 +84,12 @@ static void on_key(int key, int event, u32 button)
     if (block < 0) {
         failed = 1;
         saved = 0;
-        icon_until = sceKernelGetSystemTimeLow() + ICON_US;
+        icon_until = now_us() + ICON_US;
         return;
     }
     shot = sceKernelGetBlockHeadAddr(block);
     saved = failed = 0;
-    icon_until = sceKernelGetSystemTimeLow() + ICON_US + 2000000;
+    icon_until = now_us() + ICON_US + 2000000;
     stage = WANTED;
 }
 
@@ -131,7 +131,7 @@ static int saver(SceSize args, void *argp)
         block = -1;
         saved = ok;
         failed = !ok;
-        icon_until = sceKernelGetSystemTimeLow() + ICON_US;
+        icon_until = now_us() + ICON_US;
         stage = IDLE;
     }
     return 0;
