@@ -1,5 +1,5 @@
-// Boro Status: battery % on the XMB, an in-game battery corner (SCREEN + L
-// turns it on or off) and a 3 second peek at the time and battery
+// Boro Status: battery % on the XMB and an in-game battery corner (SCREEN + L
+// turns either on or off where you are) and a 3 second peek at the time and battery
 // (SCREEN + Triangle), in the XMB or a game.
 #include <pspctrl.h>
 #include <pspinit.h>
@@ -93,27 +93,31 @@ static void on_key(int key, int event, u32 button)
 {
     if (key != KEY_SCREEN || event != EV_COMBO) return;
     if (button & PSP_CTRL_TRIANGLE) peek_until = sceKernelGetSystemTimeLow() + PEEK_US;
-    if ((button & PSP_CTRL_LTRIGGER) && !in_vsh) {
-        corner = !corner;
+    if (button & PSP_CTRL_LTRIGGER) {
+        if (in_vsh) show_xmb = !show_xmb;
+        else corner = !corner;
         save_at = sceKernelGetSystemTimeLow() + 1000000;
     }
 }
 
-static void load_corner(void)
+// Two digits: the in-game corner, then the XMB %, each 1 for shown.
+static void load_state(void)
 {
-    char c = 0;
+    char c[2] = { 0 };
     SceUID fd = sceIoOpen(STATE_PATH, PSP_O_RDONLY, 0);
     if (fd < 0) return;
-    sceIoRead(fd, &c, 1);
+    int n = sceIoRead(fd, c, 2);
     sceIoClose(fd);
-    corner = c == '1';
+    if (n >= 1) corner = c[0] == '1';
+    if (n >= 2) show_xmb = c[1] == '1';
 }
 
-static void save_corner(void)
+static void save_state(void)
 {
     SceUID fd = sceIoOpen(STATE_PATH, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
     if (fd < 0) return;
-    sceIoWrite(fd, corner ? "1\n" : "0\n", 2);
+    char c[3] = { corner ? '1' : '0', show_xmb ? '1' : '0', '\n' };
+    sceIoWrite(fd, c, 3);
     sceIoClose(fd);
 }
 
@@ -131,7 +135,7 @@ static int worker(SceSize args, void *argp)
         }
         ScePspDateTime t;
         if (sceRtcGetCurrentClockLocalTime(&t) >= 0) { hour = t.hour; minute = t.minute; }
-        if (save_at && (int)(save_at - sceKernelGetSystemTimeLow()) <= 0) { save_at = 0; save_corner(); }
+        if (save_at && (int)(save_at - sceKernelGetSystemTimeLow()) <= 0) { save_at = 0; save_state(); }
         sceKernelDelayThread(1000000);
     }
     return 0;
@@ -143,7 +147,7 @@ int module_start(SceSize args, void *argp)
     ini_load();
     in_vsh = sceKernelInitKeyConfig() == PSP_INIT_KEYCONFIG_VSH;
     show_xmb = ini_int("status", "xmb", 1);
-    load_corner();
+    load_state();
 
     SceUID th = sceKernelCreateThread("boro_status", worker, 0x30, 0x1000, 0, NULL);
     if (th >= 0) sceKernelStartThread(th, 0, NULL);

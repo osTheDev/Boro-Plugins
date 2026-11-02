@@ -10,14 +10,15 @@
 
 static KeyHandler handler;
 
-typedef struct { u32 bit; int down, used; u32 since, up_at; } Key;
+typedef struct { u32 bit; int down, used, combo; u32 since, up_at; } Key;
 
-static Key keys[2] = { { PSP_CTRL_NOTE, 0, 0, 0, 0 }, { PSP_CTRL_SCREEN, 0, 0, 0, 0 } };
+static Key keys[2] = { { PSP_CTRL_NOTE, 0, 0, 0, 0, 0 }, { PSP_CTRL_SCREEN, 0, 0, 0, 0, 0 } };
 static volatile u32 last_input;
 
 int keys_held(int key) { return keys[key].down; }
 u32 keys_released_at(int key) { return keys[key].up_at; }
 u32 keys_last_input(void) { return last_input; }
+int keys_combo(int key) { return keys[key].combo; }
 
 static int thread(SceSize args, void *argp)
 {
@@ -31,9 +32,9 @@ static int thread(SceSize args, void *argp)
         for (int k = 0; k < 2; k++) {
             Key *key = &keys[k];
             if (b & key->bit) {
-                if (!key->down) { key->down = 1; key->used = 0; key->since = now; }
+                if (!key->down) { key->down = 1; key->used = key->combo = 0; key->since = now; }
                 u32 combo = pressed & COMBO_BUTTONS;
-                if (combo) { key->used = 1; handler(k, EV_COMBO, combo); }
+                if (combo) { key->used = key->combo = 1; handler(k, EV_COMBO, combo); }
                 if (!key->used && now - key->since >= HOLD_US) { key->used = 1; handler(k, EV_HOLD, 0); }
             } else if (key->down) {
                 key->down = 0;

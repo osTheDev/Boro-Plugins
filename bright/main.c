@@ -49,7 +49,8 @@ static void apply(void)
 }
 
 // Every brightness change goes through here, the firmware's included. Its own
-// SCREEN steps are swallowed; its auto-dim and screen-off pass; when it brings
+// SCREEN steps are swallowed; its auto-dim and screen-off pass (unless
+// SCREEN was held for a combo); when it brings
 // the screen back, it comes back at our step.
 static void hooked_set_brightness(int level, int unk)
 {
@@ -57,7 +58,8 @@ static void hooked_set_brightness(int level, int unk)
     sceDisplayGetBrightness(&cur, &u);
     u32 now = sceKernelGetSystemTimeLow();
     int screen_key = keys_held(KEY_SCREEN) || now - keys_released_at(KEY_SCREEN) < 500000;
-    if (screen_key && level > 0) return;
+    // Holding SCREEN for a combo can also trip the firmware's screen-off.
+    if (screen_key && (level > 0 || keys_combo(KEY_SCREEN))) return;
     if (level == 0 || (level < cur && now - keys_last_input() >= IDLE_US)) {
         dimmed = 1;
         set_brightness(level, unk);

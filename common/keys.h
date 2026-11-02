@@ -20,5 +20,6 @@ void keys_start(KeyHandler handler);
 int keys_held(int key);           // NOTE or SCREEN is down right now
 u32 keys_released_at(int key);    // system time (us) it last came up
 u32 keys_last_input(void);        // system time (us) any button last changed
+int keys_combo(int key);          // its current or last press was part of a combo
 
 #endif
