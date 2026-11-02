@@ -1,6 +1,7 @@
 // Better Bright: 10 backlight steps instead of the firmware's 4, two of them
 // dimmer than the firmware goes, and full brightness on battery if asked.
-// SCREEN steps through them; SCREEN + Up / Down moves one step.
+// SCREEN steps through them; SCREEN + Up / Down moves one step; holding
+// SCREEN 2 seconds turns the screen off until the next press.
 #include <pspctrl.h>
 #include <pspdisplay_kernel.h>
 #include <pspiofilemgr.h>
@@ -30,6 +31,8 @@ static int step = 7;                       // 1-based
 static int full_on_battery, show_bar, extra_dim;
 static volatile int dimmed;                // the firmware has dimmed or turned the screen off
 static volatile u32 bar_until, save_at;
+static volatile int off;               // SCREEN held 2 s turned the screen off
+static volatile u32 off_at, woke_at;
 
 static SctrlFunctionPatchData patch;
 static void (*set_brightness)(int, int);
@@ -49,17 +52,17 @@ static void apply(void)
 }
 
 // Every brightness change goes through here, the firmware's included. Its own
-// SCREEN steps are swallowed; its auto-dim and screen-off pass (unless
-// SCREEN was held for a combo); when it brings
-// the screen back, it comes back at our step.
+// SCREEN steps and its 1 second hold-SCREEN screen-off are swallowed (this
+// plugin turns the screen off after 2 seconds instead); its auto-dim and
+// idle screen-off pass; when it brings the screen back, it comes back at our
+// step.
 static void hooked_set_brightness(int level, int unk)
 {
     int cur = 0, u = 0;
     sceDisplayGetBrightness(&cur, &u);
     u32 now = sceKernelGetSystemTimeLow();
     int screen_key = keys_held(KEY_SCREEN) || now - keys_released_at(KEY_SCREEN) < 500000;
-    // Holding SCREEN for a combo can also trip the firmware's screen-off.
-    if (screen_key && (level > 0 || keys_combo(KEY_SCREEN))) return;
+    if (screen_key) return;
     if (level == 0 || (level < cur && now - keys_last_input() >= IDLE_US)) {
         dimmed = 1;
         set_brightness(level, unk);
@@ -80,6 +83,13 @@ static void change(int to)
 static void on_key(int key, int event, u32 button)
 {
     if (key != KEY_SCREEN) return;
+    if (event == EV_HOLD) {
+        off = dimmed = 1;
+        off_at = sceKernelGetSystemTimeLow();
+        set_brightness(0, 0);
+        return;
+    }
+    if (event == EV_TAP && sceKernelGetSystemTimeLow() - woke_at < 1000000) return; // the press that woke it
     if (event == EV_TAP) change(step >= highest_step() ? lowest_step() : step + 1);
     else if (event == EV_COMBO && button & PSP_CTRL_UP) change(step < highest_step() ? step + 1 : step);
     else if (event == EV_COMBO && button & PSP_CTRL_DOWN) change(step > lowest_step() ? step - 1 : step);
@@ -134,9 +144,16 @@ static int worker(SceSize args, void *argp)
 {
     (void)args; (void)argp;
     for (;;) {
+        // Once SCREEN is up after turning the screen off, any press brings it back.
+        u32 up = keys_released_at(KEY_SCREEN);
+        if (off && (int)(up - off_at) > 0 && (int)(keys_last_input() - up) > 0) {
+            off = dimmed = 0;
+            woke_at = sceKernelGetSystemTimeLow();
+            apply();
+        }
         if (save_at && (int)(save_at - sceKernelGetSystemTimeLow()) <= 0) { save_at = 0; save_step(); }
         if (step > highest_step()) apply();
-        sceKernelDelayThread(250000);
+        sceKernelDelayThread(off ? 30000 : 250000);
     }
     return 0;
 }
