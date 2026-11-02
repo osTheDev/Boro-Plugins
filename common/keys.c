@@ -1,6 +1,7 @@
 #include "keys.h"
 
 #include <pspctrl.h>
+#include <pspctrl_kernel.h>
 #include <pspkernel.h>
 
 #define HOLD_US 2000000
@@ -24,6 +25,7 @@ static int thread(SceSize args, void *argp)
 {
     (void)args; (void)argp;
     u32 last = 0;
+    int masked = 0;
     for (;;) {
         SceCtrlData pad;
         sceCtrlPeekBufferPositive(&pad, 1);
@@ -41,6 +43,14 @@ static int thread(SceSize args, void *argp)
                 key->up_at = now;
                 if (!key->used) handler(k, EV_TAP, 0);
             }
+        }
+        // While NOTE or SCREEN is down, games don't see the combo buttons, so
+        // SCREEN + R takes a shot without also pressing R in the game. The
+        // mask stays until those buttons are up too.
+        int want = (b & (PSP_CTRL_NOTE | PSP_CTRL_SCREEN)) || (masked && (b & COMBO_BUTTONS));
+        if (want != masked) {
+            sceCtrlSetButtonMasks(COMBO_BUTTONS, want ? SCE_CTRL_MASK_IGNORE_BUTTONS : SCE_CTRL_MASK_NO_MASK);
+            masked = want;
         }
         last = b;
         sceKernelDelayThread(POLL_US);
