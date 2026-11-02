@@ -20,6 +20,7 @@ static int fb_stride, fb_format;
 static u32 blend(u32 dst_rgb, u32 argb)
 {
     u32 a = argb >> 24, ia = 255 - a;
+    if (a == 255) return argb & 0xFFFFFF;
     u32 r = (((argb >> 16) & 0xFF) * a + ((dst_rgb >> 16) & 0xFF) * ia) / 255;
     u32 g = (((argb >> 8) & 0xFF) * a + ((dst_rgb >> 8) & 0xFF) * ia) / 255;
     u32 b = ((argb & 0xFF) * a + (dst_rgb & 0xFF) * ia) / 255;

@@ -6,7 +6,7 @@ ARK plugins that go with [Boro](https://github.com/osTheDev/Boro), the PSP media
 | --- | --- | --- |
 | `boro_bright.prx` | Better Bright: 10 brightness steps on SCREEN, SCREEN + Up / Down for one step, hold SCREEN 2 s to turn the screen off, optional full brightness on battery | Testing |
 | `boro_status.prx` | Boro Status: battery % on the XMB, SCREEN + L for an in-game battery corner, SCREEN + Triangle peeks at the time and battery | Testing |
-| `boro_hold.prx` | Hold+ | Planned |
+| `boro_hold.prx` | Hold+: HOLD shows a lock card then turns the screen off; nudge HOLD off and on for a peek; blocks an accidental sleep right after unlocking | Testing |
 | `boro_snap.prx` | Snap | Planned |
 | `boro_anywhere.prx` | Boro Anywhere | Planned |
 
