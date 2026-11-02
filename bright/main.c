@@ -24,7 +24,7 @@ PSP_MODULE_INFO("BoroBright", PSP_MODULE_KERNEL, 1, 0);
 #define IDLE_US 5000000 // a dimming request after this long without input is the firmware's auto-dim
 
 // Backlight level (0-100) for each step. 1 and 2 are the extra-dim steps.
-static const int levels[STEPS] = { 6, 12, 22, 34, 44, 54, 64, 72, 86, 100 };
+static const int levels[STEPS] = { 30, 36, 44, 52, 58, 64, 72, 84, 92, 100 };
 
 static int step = 7;                       // 1-based
 static int full_on_battery, show_bar, extra_dim;
