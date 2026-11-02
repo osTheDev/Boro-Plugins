@@ -30,7 +30,7 @@ static volatile u32 peek_until, save_at;
 
 // Read by a worker thread: the power and clock calls can wait on the system
 // controller, which the display hook must never do.
-static volatile int percent = -1, minutes_left = -1, charging, hour, minute;
+static volatile int percent = -1, minutes_left = -1, charging, month, day, hour, minute;
 
 static u32 level_color(void)
 {
@@ -61,6 +61,26 @@ static void battery_pill(int right, int y)
     battery_icon(right - 24, y + 4, c);
 }
 
+// The XMB's own clock reads like "1/3 3:35" and ends where its battery icon
+// starts, so its left edge moves as the digits change. Measured from a photo
+// of the XMB: about 10 px per digit and 5 px per separator.
+#define XMB_CLOCK_RIGHT 413
+#define XMB_TEXT_TOP 6
+
+static int digits(int v) { return v >= 10 ? 2 : 1; }
+
+// Plain "71%" just left of the XMB's date, with a shadow like the XMB's text.
+static void xmb_percent(void)
+{
+    int n = digits(month) + digits(day) + digits(hour) + 2;
+    int clock_left = XMB_CLOCK_RIGHT - (n * 10 + 3 * 5);
+    char s[8];
+    snprintf(s, sizeof(s), "%d%%", percent);
+    int x = clock_left - 8 - ov_text_width(s, 2), y = XMB_TEXT_TOP - 3 * 2; // the font's glyphs start on row 3
+    ov_text(x + 1, y + 1, s, 0x99000000, 2);
+    ov_text(x, y, s, level_color(), 2);
+}
+
 static void draw_peek(void)
 {
     const int x = 120, y = 99, w = 240, h = 74;
@@ -85,7 +105,8 @@ static void draw_peek(void)
 static void draw(void)
 {
     if (percent < 0) return; // no reading yet, or no battery
-    if (in_vsh ? show_xmb : corner) battery_pill(472, 6);
+    if (in_vsh && show_xmb) xmb_percent();
+    else if (!in_vsh && corner) battery_pill(472, 6);
     if ((int)(peek_until - sceKernelGetSystemTimeLow()) > 0) draw_peek();
 }
 
@@ -134,7 +155,7 @@ static int worker(SceSize args, void *argp)
             percent = -1;
         }
         ScePspDateTime t;
-        if (sceRtcGetCurrentClockLocalTime(&t) >= 0) { hour = t.hour; minute = t.minute; }
+        if (sceRtcGetCurrentClockLocalTime(&t) >= 0) { month = t.month; day = t.day; hour = t.hour; minute = t.minute; }
         if (save_at && (int)(save_at - sceKernelGetSystemTimeLow()) <= 0) { save_at = 0; save_state(); }
         sceKernelDelayThread(1000000);
     }
