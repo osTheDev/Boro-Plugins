@@ -1,5 +1,5 @@
 # Builds every plugin into dist/SEPLUGINS/.
-PLUGINS = hello bright status
+PLUGINS = bright status
 
 all:
 	@for p in $(PLUGINS); do $(MAKE) -C $$p || exit 1; done

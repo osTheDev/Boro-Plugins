@@ -4,7 +4,6 @@ ARK plugins that go with [Boro](https://github.com/osTheDev/Boro), the PSP media
 
 | File | Plugin | Status |
 | --- | --- | --- |
-| `boro_hello.prx` | Test plugin: shows a banner when it loads and names each NOTE or SCREEN press | For testing the foundation |
 | `boro_bright.prx` | Better Bright: 10 brightness steps on SCREEN, SCREEN + Up / Down for one step, optional full brightness on battery | Testing |
 | `boro_status.prx` | Boro Status: battery % on the XMB, SCREEN + L for an in-game battery corner, SCREEN + Triangle peeks at the time and battery | Testing |
 | `boro_hold.prx` | Hold+ | Planned |
@@ -17,8 +16,8 @@ ARK plugins that go with [Boro](https://github.com/osTheDev/Boro), the PSP media
 2. Open `SEPLUGINS/PLUGINS.TXT` (create it if it isn't there) and add two lines per plugin, one for the XMB and one for games:
 
    ```
-   vsh, ms0:/SEPLUGINS/boro_hello.prx, on
-   game, ms0:/SEPLUGINS/boro_hello.prx, on
+   vsh, ms0:/SEPLUGINS/boro_bright.prx, on
+   game, ms0:/SEPLUGINS/boro_bright.prx, on
    ```
 
 3. Restart the PSP.
