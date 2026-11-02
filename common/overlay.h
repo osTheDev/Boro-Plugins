@@ -19,5 +19,6 @@ void ov_text(int x, int y, const char *s, u32 argb, int scale); // y is the top
 int ov_text_width(const char *s, int scale);
 void ov_rrect(int x, int y, int w, int h, int r, u32 argb);     // filled, rounded corners
 void ov_ring(int cx, int cy, int r, u32 argb);                  // 1px circle outline
+void ov_read_row(int y, u8 *rgb); // one row of the frame as 8-bit RGB, before this plugin draws
 
 #endif

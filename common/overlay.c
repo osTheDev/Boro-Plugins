@@ -51,6 +51,24 @@ static void plot(int x, int y, u32 argb)
     else *p = r >> 4 | (g >> 4) << 4 | (b >> 4) << 8 | 0xF000;
 }
 
+void ov_read_row(int y, u8 *rgb)
+{
+    for (int x = 0; x < OV_W; x++, rgb += 3) {
+        int i = y * fb_stride + x;
+        u32 r, g, b;
+        if (fb_format == PSP_DISPLAY_PIXEL_FORMAT_8888) {
+            u32 d = ((u32 *)fb)[i];
+            r = d & 0xFF; g = d >> 8 & 0xFF; b = d >> 16 & 0xFF;
+        } else {
+            u16 d = ((u16 *)fb)[i];
+            if (fb_format == PSP_DISPLAY_PIXEL_FORMAT_565) { r = (d & 31) << 3; g = (d >> 5 & 63) << 2; b = (d >> 11 & 31) << 3; }
+            else if (fb_format == PSP_DISPLAY_PIXEL_FORMAT_5551) { r = (d & 31) << 3; g = (d >> 5 & 31) << 3; b = (d >> 10 & 31) << 3; }
+            else { r = (d & 15) << 4; g = (d >> 4 & 15) << 4; b = (d >> 8 & 15) << 4; }
+        }
+        rgb[0] = r; rgb[1] = g; rgb[2] = b;
+    }
+}
+
 void ov_rect(int x, int y, int w, int h, u32 argb)
 {
     for (int j = y; j < y + h; j++)
