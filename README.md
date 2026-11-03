@@ -13,16 +13,17 @@ ARK plugins that go with [Boro](https://github.com/osTheDev/Boro), the PSP media
 ## Install
 
 1. Copy the `SEPLUGINS` folder to the root of the memory stick. It holds the plugins and `boro.ini`, the settings they share.
-2. Open `SEPLUGINS/PLUGINS.TXT` (create it if it isn't there) and add two lines per plugin, one for the XMB and one for games:
+2. Open `SEPLUGINS/PLUGINS.TXT` (create it if it isn't there) and add one line per plugin. `always` loads it in the XMB, homebrew, UMD games and PS1 games:
 
    ```
-   vsh, ms0:/SEPLUGINS/boro_bright.prx, on
-   game, ms0:/SEPLUGINS/boro_bright.prx, on
+   always, ms0:/SEPLUGINS/boro_bright.prx, on
    ```
+
+   Boro's Settings > Plugins page writes these lines for you, and folds older `vsh` + `game` pairs into one line.
 
 3. Restart the PSP.
 
-To turn a plugin off, change `on` to `off` on its lines, or use ARK's plugin settings in the recovery menu.
+To turn a plugin off, change `on` to `off` on its line, or use ARK's plugin settings in the recovery menu.
 
 ## If the PSP won't start
 
