@@ -8,7 +8,7 @@ ARK plugins that go with [Boro](https://github.com/osTheDev/Boro), the PSP media
 | `boro_status.prx` | Boro Status: battery % on the XMB, SCREEN + L for an in-game battery corner, SCREEN + Triangle peeks at the time and battery | Testing |
 | `boro_hold.prx` | Hold+: HOLD shows a lock card then turns the screen off; nudge HOLD off and on for a peek; blocks an accidental sleep right after unlocking | Testing |
 | `boro_snap.prx` | Snap: SCREEN + R saves a screenshot to `PICTURE/Screenshots/` without pausing the game | Testing |
-| `boro_anywhere.prx` | Boro Anywhere | Planned |
+| `boro_time.prx` | Boro Playtime: times every game you play (ISO, CSO, EBOOT; PS1 and homebrew too) and saves it every minute to `PSP/GAME/Boro/data/playtime.txt` for Boro's Games page. No buttons, nothing on screen | Testing |
 
 ## Install
 
