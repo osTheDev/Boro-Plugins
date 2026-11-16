@@ -19,7 +19,7 @@ PSP_MODULE_INFO("BoroStatus", PSP_MODULE_KERNEL, 1, 0);
 
 
 static int in_vsh, show_xmb, corner;
-static volatile u32 peek_until, save_at;
+static volatile u64 peek_until, save_at;
 
 // "87%" and the icon in a dark pill whose edge takes the warning color.
 static void battery_pill(int right, int y)
@@ -59,17 +59,17 @@ static void draw(void)
     if (info.percent < 0) return; // no reading yet, or no battery
     if (in_vsh && show_xmb) xmb_percent();
     else if (!in_vsh && corner) battery_pill(472, 6);
-    if ((int)(peek_until - sceKernelGetSystemTimeLow()) > 0) info_peek_card(120, 99, 240);
+    if (peek_until > now_us()) info_peek_card(120, 99, 240);
 }
 
 static void on_key(int key, int event, u32 button)
 {
     if (key != KEY_SCREEN || event != EV_COMBO) return;
-    if (button & PSP_CTRL_TRIANGLE) peek_until = sceKernelGetSystemTimeLow() + PEEK_US;
+    if (button & PSP_CTRL_TRIANGLE) peek_until = now_us() + PEEK_US;
     if (button & PSP_CTRL_LTRIGGER) {
         if (in_vsh) show_xmb = !show_xmb;
         else corner = !corner;
-        save_at = sceKernelGetSystemTimeLow() + 1000000;
+        save_at = now_us() + 1000000;
     }
 }
 
@@ -99,7 +99,7 @@ static int worker(SceSize args, void *argp)
 {
     (void)args; (void)argp;
     for (;;) {
-        if (save_at && (int)(save_at - sceKernelGetSystemTimeLow()) <= 0) { save_at = 0; save_state(); }
+        if (save_at && save_at <= now_us()) { save_at = 0; save_state(); }
         sceKernelDelayThread(250000);
     }
     return 0;

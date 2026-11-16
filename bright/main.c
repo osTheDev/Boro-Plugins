@@ -30,9 +30,9 @@ static const int levels[STEPS] = { 30, 36, 44, 52, 58, 64, 72, 84, 92, 100 };
 static int step = 7;                       // 1-based
 static int full_on_battery, show_bar, extra_dim;
 static volatile int dimmed;                // the firmware has dimmed or turned the screen off
-static volatile u32 bar_until, save_at;
+static volatile u64 bar_until, save_at;
 static volatile int off;               // SCREEN held 2 s turned the screen off
-static volatile u32 off_at, woke_at;
+static volatile u64 off_at, woke_at;
 
 static SctrlFunctionPatchData patch;
 static void (*set_brightness)(int, int);
@@ -60,7 +60,7 @@ static void hooked_set_brightness(int level, int unk)
 {
     int cur = 0, u = 0;
     sceDisplayGetBrightness(&cur, &u);
-    u32 now = sceKernelGetSystemTimeLow();
+    u64 now = now_us();
     int screen_key = keys_held(KEY_SCREEN) || now - keys_released_at(KEY_SCREEN) < 500000;
     if (screen_key) return;
     if (level == 0 || (level < cur && now - keys_last_input() >= IDLE_US)) {
@@ -76,8 +76,8 @@ static void change(int to)
 {
     step = to;
     apply();
-    bar_until = sceKernelGetSystemTimeLow() + BAR_US;
-    save_at = sceKernelGetSystemTimeLow() + 2000000;
+    bar_until = now_us() + BAR_US;
+    save_at = now_us() + 2000000;
 }
 
 static void on_key(int key, int event, u32 button)
@@ -85,11 +85,11 @@ static void on_key(int key, int event, u32 button)
     if (key != KEY_SCREEN) return;
     if (event == EV_HOLD) {
         off = dimmed = 1;
-        off_at = sceKernelGetSystemTimeLow();
+        off_at = now_us();
         set_brightness(0, 0);
         return;
     }
-    if (event == EV_TAP && sceKernelGetSystemTimeLow() - woke_at < 1000000) return; // the press that woke it
+    if (event == EV_TAP && now_us() - woke_at < 1000000) return; // the press that woke it
     if (event == EV_TAP) change(step >= highest_step() ? lowest_step() : step + 1);
     else if (event == EV_COMBO && button & PSP_CTRL_UP) change(step < highest_step() ? step + 1 : step);
     else if (event == EV_COMBO && button & PSP_CTRL_DOWN) change(step > lowest_step() ? step - 1 : step);
@@ -99,7 +99,7 @@ static void on_key(int key, int event, u32 button)
 // and a mark where the battery cap is.
 static void draw(void)
 {
-    if (!show_bar || (int)(bar_until - sceKernelGetSystemTimeLow()) <= 0) return;
+    if (!show_bar || bar_until <= now_us()) return;
     const int x = 130, y = 226, w = 220, h = 32;
     ov_rrect(x, y, w, h, 12, 0xE8161820);
     ov_ring(148, 242, 6, 0xFFF2F2F5);
@@ -145,13 +145,13 @@ static int worker(SceSize args, void *argp)
     (void)args; (void)argp;
     for (;;) {
         // Once SCREEN is up after turning the screen off, any press brings it back.
-        u32 up = keys_released_at(KEY_SCREEN);
-        if (off && (int)(up - off_at) > 0 && (int)(keys_last_input() - up) > 0) {
+        u64 up = keys_released_at(KEY_SCREEN);
+        if (off && up > off_at && keys_last_input() > up) {
             off = dimmed = 0;
-            woke_at = sceKernelGetSystemTimeLow();
+            woke_at = now_us();
             apply();
         }
-        if (save_at && (int)(save_at - sceKernelGetSystemTimeLow()) <= 0) { save_at = 0; save_step(); }
+        if (save_at && save_at <= now_us()) { save_at = 0; save_step(); }
         if (step > highest_step()) apply();
         sceKernelDelayThread(off ? 30000 : 250000);
     }

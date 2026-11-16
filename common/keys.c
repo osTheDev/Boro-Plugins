@@ -11,14 +11,16 @@
 
 static KeyHandler handler;
 
-typedef struct { u32 bit; int down, used, combo; u32 since, up_at; } Key;
+typedef struct { u32 bit; int down, used, combo; u64 since, up_at; } Key;
 
 static Key keys[2] = { { PSP_CTRL_NOTE, 0, 0, 0, 0, 0 }, { PSP_CTRL_SCREEN, 0, 0, 0, 0, 0 } };
-static volatile u32 last_input;
+static volatile u64 last_input;
+
+u64 now_us(void) { return sceKernelGetSystemTimeWide(); }
 
 int keys_held(int key) { return keys[key].down; }
-u32 keys_released_at(int key) { return keys[key].up_at; }
-u32 keys_last_input(void) { return last_input; }
+u64 keys_released_at(int key) { return keys[key].up_at; }
+u64 keys_last_input(void) { return last_input; }
 int keys_combo(int key) { return keys[key].combo; }
 
 static int thread(SceSize args, void *argp)
@@ -29,7 +31,8 @@ static int thread(SceSize args, void *argp)
     for (;;) {
         SceCtrlData pad;
         sceCtrlPeekBufferPositive(&pad, 1);
-        u32 now = sceKernelGetSystemTimeLow(), b = pad.Buttons, pressed = b & ~last;
+        u64 now = now_us();
+        u32 b = pad.Buttons, pressed = b & ~last;
         if (b != last) last_input = now;
         for (int k = 0; k < 2; k++) {
             Key *key = &keys[k];

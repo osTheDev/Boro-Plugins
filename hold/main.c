@@ -11,6 +11,7 @@
 
 #include "../common/info.h"
 #include "../common/ini.h"
+#include "../common/keys.h"
 #include "../common/overlay.h"
 
 PSP_MODULE_INFO("BoroHold", PSP_MODULE_KERNEL, 1, 0);
@@ -27,7 +28,7 @@ int scePowerCancelRequest(void);
 
 enum { OPEN, LOCKING, LOCKED, DARK, PEEK };
 static volatile int state = OPEN;
-static volatile u32 lock_at, peek_until, pill_until;
+static volatile u64 lock_at, peek_until, pill_until;
 static int screen_off, saved_level = -1;
 
 static void backlight(int on)
@@ -55,7 +56,7 @@ static void draw_lock_card(void)
     ov_rect(cx - 1, y + 28, 2, 6, INFO_CARD);
     ov_text(cx - ov_text_width("Locked", 2) / 2, y + 42, "Locked", INFO_TEXT, 2);
 
-    u32 elapsed = sceKernelGetSystemTimeLow() - lock_at;
+    u32 elapsed = (u32)(now_us() - lock_at);
     if (screen_off) {
         char line[24];
         int secs = (int)(LOCK_US - elapsed + 999999) / 1000000;
@@ -77,13 +78,13 @@ static void draw_pill(void)
 
 static void draw(void)
 {
-    u32 now = sceKernelGetSystemTimeLow();
+    u64 now = now_us();
     if (state == LOCKING) draw_lock_card();
     if (state == PEEK) {
         ov_rect(0, 0, OV_W, OV_H, 0xFF000000);
         info_peek_card(120, 99, 240);
     }
-    if ((int)(pill_until - now) > 0) draw_pill();
+    if (pill_until > now) draw_pill();
 }
 
 static int worker(SceSize args, void *argp)
@@ -92,11 +93,11 @@ static int worker(SceSize args, void *argp)
     SceCtrlData pad;
     sceCtrlPeekBufferPositive(&pad, 1);
     int was_hold = (pad.Buttons & PSP_CTRL_HOLD) != 0, was_dark = 0, guarding = 0;
-    u32 unlock_at = 0;
+    u64 unlock_at = 0;
     for (;;) {
         sceCtrlPeekBufferPositive(&pad, 1);
         int hold = (pad.Buttons & PSP_CTRL_HOLD) != 0;
-        u32 now = sceKernelGetSystemTimeLow();
+        u64 now = now_us();
 
         if (hold && !was_hold) {
             if (was_dark && now - unlock_at < NUDGE_US) {
@@ -121,7 +122,7 @@ static int worker(SceSize args, void *argp)
             if (screen_off) backlight(0);
             state = screen_off ? DARK : LOCKED;
         }
-        if (state == PEEK && (int)(peek_until - now) <= 0) {
+        if (state == PEEK && peek_until <= now) {
             backlight(0);
             state = DARK;
         }

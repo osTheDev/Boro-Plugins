@@ -8,21 +8,22 @@ ARK plugins that go with [Boro](https://github.com/osTheDev/Boro), the PSP media
 | `boro_status.prx` | Boro Status: battery % on the XMB, SCREEN + L for an in-game battery corner, SCREEN + Triangle peeks at the time and battery | Testing |
 | `boro_hold.prx` | Hold+: HOLD shows a lock card then turns the screen off; nudge HOLD off and on for a peek; blocks an accidental sleep right after unlocking | Testing |
 | `boro_snap.prx` | Snap: SCREEN + R saves a screenshot to `PICTURE/Screenshots/` without pausing the game | Testing |
-| `boro_anywhere.prx` | Boro Anywhere | Planned |
+| `boro_time.prx` | Boro Playtime: times every game you play (ISO, CSO, EBOOT; PS1 and homebrew too) and saves it every minute (first at 10 s) to `PSP/GAME/Boro/data/playtime.txt` for Boro's Games page. No buttons, nothing on screen | Testing |
 
 ## Install
 
 1. Copy the `SEPLUGINS` folder to the root of the memory stick. It holds the plugins and `boro.ini`, the settings they share.
-2. Open `SEPLUGINS/PLUGINS.TXT` (create it if it isn't there) and add two lines per plugin, one for the XMB and one for games:
+2. Open `SEPLUGINS/PLUGINS.TXT` (create it if it isn't there) and add one line per plugin. `always` loads it in the XMB, homebrew, UMD games and PS1 games:
 
    ```
-   vsh, ms0:/SEPLUGINS/boro_bright.prx, on
-   game, ms0:/SEPLUGINS/boro_bright.prx, on
+   always, ms0:/SEPLUGINS/boro_bright.prx, on
    ```
+
+   Boro's Settings > Plugins page writes these lines for you, and folds older `vsh` + `game` pairs into one line.
 
 3. Restart the PSP.
 
-To turn a plugin off, change `on` to `off` on its lines, or use ARK's plugin settings in the recovery menu.
+To turn a plugin off, change `on` to `off` on its line, or use ARK's plugin settings in the recovery menu.
 
 ## If the PSP won't start
 
