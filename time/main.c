@@ -65,6 +65,24 @@ static void read_sfo(const char *file, int in_pbp)
     sfo_get(sfo, size, "CATEGORY", category, sizeof(category));
 }
 
+static void write_file(const char *file, const char *text, int append)
+{
+    SceUID fd = sceIoOpen(file, PSP_O_WRONLY | PSP_O_CREAT | (append ? PSP_O_APPEND : PSP_O_TRUNC), 0777);
+    if (fd < 0) return;
+    sceIoWrite(fd, text, strlen(text));
+    sceIoClose(fd);
+}
+
+// Test builds only: one line per launch saying what the plugin saw.
+static void debug(const char *what)
+{
+    static char line[512];
+    const char *boot = sceKernelInitFileName();
+    snprintf(line, sizeof(line), "%s\tkey=%x\tapi=%x\tboot=%s\tpath=%s\ttitle=%s\tcat=%s\n", what,
+             sceKernelInitKeyConfig(), sceKernelInitApitype(), boot ? boot : "(none)", path, title, category);
+    write_file(DIR "/playtime_debug.txt", line, 1);
+}
+
 static int identify(void)
 {
     const char *boot = sceKernelInitFileName();
@@ -93,13 +111,6 @@ static int identify(void)
     return 1;
 }
 
-static void write_file(const char *file, const char *text, int append)
-{
-    SceUID fd = sceIoOpen(file, PSP_O_WRONLY | PSP_O_CREAT | (append ? PSP_O_APPEND : PSP_O_TRUNC), 0777);
-    if (fd < 0) return;
-    sceIoWrite(fd, text, strlen(text));
-    sceIoClose(fd);
-}
 
 // Moves a session left by the last game (or a dead battery) into the log.
 static void fold_last_session(void)
@@ -131,11 +142,16 @@ static int timer(SceSize args, void *argp)
 {
     (void)args; (void)argp;
     sceKernelDelayThread(2000000); // let the game get going first
-    if (!identify()) return sceKernelExitDeleteThread(0);
     sceIoMkdir("ms0:/PSP", 0777);
     sceIoMkdir("ms0:/PSP/GAME", 0777);
     sceIoMkdir("ms0:/PSP/GAME/Boro", 0777);
     sceIoMkdir(DIR, 0777);
+    debug("start");
+    if (!identify()) {
+        debug("skipped");
+        return sceKernelExitDeleteThread(0);
+    }
+    debug("timing");
     fold_last_session();
 
     ScePspDateTime t;
@@ -153,7 +169,7 @@ static int timer(SceSize args, void *argp)
             part_us += (u32)step;
             while (part_us >= 1000000) { part_us -= 1000000; secs++; }
         }
-        if (secs - saved_at >= SAVE_EVERY) {
+        if (secs - saved_at >= SAVE_EVERY || (!saved_at && secs >= 10)) { // first save at 10 s
             save(secs);
             saved_at = secs;
         }
@@ -167,6 +183,7 @@ int module_start(SceSize args, void *argp)
     if (sceKernelInitKeyConfig() == PSP_INIT_KEYCONFIG_VSH) return 0;
     SceUID th = sceKernelCreateThread("boro_time", timer, 0x6F, 0x2000, 0, NULL);
     if (th >= 0) sceKernelStartThread(th, 0, NULL);
+    else debug("no thread");
     return 0;
 }
 
